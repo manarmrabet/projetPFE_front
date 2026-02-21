@@ -1,43 +1,58 @@
-// angular import
 import { ChangeDetectorRef, Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { email, Field, form, minLength, required } from '@angular/forms/signals';
-
-// project import
+import { RouterModule, Router } from '@angular/router';
+import { Field, form, minLength, required } from '@angular/forms/signals';
 import { SharedModule } from 'src/app/theme/shared/shared.module';
 
 @Component({
   selector: 'app-sign-in',
+  standalone: true,
   imports: [CommonModule, RouterModule, SharedModule, Field],
   templateUrl: './signin.html',
   styleUrls: ['./signin.scss']
 })
 export class SignInComponent {
   private cd = inject(ChangeDetectorRef);
+  private router = inject(Router);
 
   submitted = signal(false);
   error = signal('');
   showPassword = signal(false);
+  isLoading = signal(false);
 
-  loginModal = signal<{ email: string; password: string }>({
-    email: '',
+  // Modèle avec Username (chaîne) et Password
+  loginModal = signal({
+    username: '',
     password: ''
   });
 
+  // Définition du formulaire
   loginForm = form(this.loginModal, (schemaPath) => {
-    required(schemaPath.email, { message: 'Email is required' });
-    email(schemaPath.email, { message: 'Enter a valid email address' });
-    required(schemaPath.password, { message: 'Password is required' });
-    minLength(schemaPath.password, 8, { message: 'Password must be at least 8 characters' });
+    required(schemaPath.username, { message: 'Nom d\'utilisateur requis' });
+    required(schemaPath.password, { message: 'Mot de passe requis' });
+    minLength(schemaPath.password, 8, { message: '8 caractères minimum' });
   });
 
   onSubmit(event: Event) {
-    this.submitted.set(true);
-    this.error.set('');
     event.preventDefault();
-    const credentials = this.loginModal();
-    console.log('login user logged in with:', credentials);
+    this.submitted.set(true);
+
+    const data = this.loginModal();
+
+    // Vérification manuelle simple pour éviter l'erreur TS sur .valid()
+    if (data.username.trim() !== '' && data.password.length >= 8) {
+      this.isLoading.set(true);
+
+      // Redirection vers dashboard-v1
+      setTimeout(() => {
+        this.router.navigate(['/dashboard-v1']).then(() => {
+          this.isLoading.set(false);
+        });
+      }, 1000);
+    } else {
+      this.error.set('Veuillez remplir correctement les champs.');
+    }
+
     this.cd.detectChanges();
   }
 

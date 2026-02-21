@@ -1,0 +1,28 @@
+.logo-brand-container {
+  margin-bottom: 25px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  .logo-text {
+    font-family: 'Open Sans', sans-serif; // Ou la police de votre choix
+    font-weight: 800;                     // Très gras pour l'impact
+    color: #004a99;                      // Le bleu officiel COFAT
+    letter-spacing: 3px;                 // Espacement des lettres pour le style
+    margin-bottom: 2px;
+    font-size: 2.2rem;                   // Taille ajustée
+    text-transform: uppercase;
+  }
+
+  .logo-underline {
+    width: 50px;                         // Largeur du trait rouge
+    height: 5px;                         // Épaisseur
+    background-color: #e30613;           // Le rouge officiel COFAT
+    border-radius: 2px;
+  }
+}
+
+// Pour centrer parfaitement le formulaire dans la carte
+.card-body {
+  padding: 35px;
+}

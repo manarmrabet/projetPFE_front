@@ -32,31 +32,15 @@ export const NavigationItems: NavigationItem[] = [
         url: '/dashboard-v1',
         icon: 'feather icon-home',
         classes: 'nav-item'
-      }
-    ]
-  },
-  {
-    id: 'auth',
-    title: 'Authentification',
-    type: 'group',
-    icon: 'icon-group',
-    children: [
-      {
-        id: 'signin',
-        title: 'Connexion',
-        type: 'item',
-        url: '/login',
-        icon: 'feather icon-log-in',
-        target: true
       },
       {
-        id: 'signup',
-        title: 'Inscription',
+        id: 'admin-management',
+        title: 'Utilisateurs',
         type: 'item',
-        url: '/register',
-        icon: 'feather icon-at-sign',
-        target: true
-      }
+        url: '/user-management', // Doit correspondre exactement au "path" défini dans les routes
+        icon: 'feather icon-users'
+}
     ]
-  }
+  },
+
 ];

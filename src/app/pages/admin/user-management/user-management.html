@@ -1,0 +1,150 @@
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-xl-10">
+
+      <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+          <h3 class="fw-bold text-dark mb-1">Gestion des Accès</h3>
+          <p class="text-muted">Créez des utilisateurs et assignez des privilèges en quelques clics.</p>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-lg-5 mb-4">
+          <div class="card border-0 shadow-lg overflow-hidden">
+            <div class="stepper-header d-flex border-bottom bg-light">
+              <div class="step-item flex-fill p-3 text-center" [class.active]="step() === 1" [class.completed]="step() > 1">
+                <span class="step-number">1</span>
+                <span class="step-label d-none d-sm-inline ms-2">Identité</span>
+              </div>
+              <div class="step-item flex-fill p-3 text-center" [class.active]="step() === 2">
+                <span class="step-number">2</span>
+                <span class="step-label d-none d-sm-inline ms-2">Rôle & Permissions</span>
+              </div>
+            </div>
+
+            <div class="card-body p-4">
+              @if (step() === 1) {
+                <div class="animate-fade-in">
+                  <h5 class="fw-bold mb-4">Informations Générales</h5>
+                  <div class="form-floating mb-3">
+                    <input type="text" class="form-control" id="uName" [(ngModel)]="newUser().userName" placeholder="Username">
+                    <label for="uName">Nom d'utilisateur</label>
+                  </div>
+                  <div class="form-floating mb-3">
+                    <input type="email" class="form-control" id="uEmail" [(ngModel)]="newUser().email" placeholder="Email">
+                    <label for="uEmail">Adresse Email Professionnelle</label>
+                  </div>
+                  <div class="row g-2 mb-4">
+                    <div class="col-md-6">
+                      <div class="form-floating">
+                        <input type="text" class="form-control" [(ngModel)]="newUser().firstName" placeholder="Prénom">
+                        <label>Prénom</label>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-floating">
+                        <input type="text" class="form-control" [(ngModel)]="newUser().lastName" placeholder="Nom">
+                        <label>Nom</label>
+                      </div>
+                    </div>
+                  </div>
+                  <button class="btn btn-primary w-100 py-3 fw-bold shadow-sm"
+                          (click)="step.set(2)"
+                          [disabled]="!newUser().userName || !newUser().email">
+                    Continuer <i class="feather icon-arrow-right ms-2"></i>
+                  </button>
+                </div>
+              }
+
+              @if (step() === 2) {
+                <div class="animate-fade-in">
+                  <h5 class="fw-bold mb-1">Assignation du Rôle</h5>
+                  <p class="text-muted small mb-4">Sélectionnez les privilèges pour <b>{{newUser().userName}}</b></p>
+
+                  <div class="role-grid mb-4">
+                    @for (role of roles(); track role.roleId) {
+                      <div class="role-card" [class.selected]="newUser().roleName === role.roleName" (click)="newUser().roleName = role.roleName">
+                        <div class="d-flex align-items-start">
+                          <div class="role-icon">
+                            <i class="feather icon-shield text-primary"></i>
+                          </div>
+                          <div class="ms-3">
+                            <h6 class="mb-0 fw-bold">{{role.roleName}}</h6>
+                            <small class="text-muted d-block">{{role.description}}</small>
+                          </div>
+                          <div class="ms-auto">
+                             <div class="custom-radio"></div>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-light py-3 px-4 fw-bold" (click)="step.set(1)">Retour</button>
+                    <button class="btn btn-success flex-grow-1 py-3 fw-bold shadow-sm"
+                            (click)="saveUser()"
+                            [disabled]="!newUser().roleName || isLoading()">
+                      @if (isLoading()) {
+                        <span class="spinner-border spinner-border-sm me-2"></span> Création...
+                      } @else {
+                        Finaliser & Envoyer Accès <i class="feather icon-check-circle ms-2"></i>
+                      }
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <div class="card border-0 shadow-lg">
+             <div class="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold">Équipe Actuelle</h5>
+                <span class="badge bg-soft-primary text-primary px-3 py-2">{{users().length}} Utilisateurs</span>
+             </div>
+             <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="bg-light">
+                    <tr>
+                      <th class="border-0 ps-4">Utilisateur</th>
+                      <th class="border-0">Rôle</th>
+                      <th class="border-0">Statut</th>
+                      <th class="border-0 text-end pe-4">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (user of users(); track user.userId) {
+                      <tr>
+                        <td class="ps-4">
+                          <div class="d-flex align-items-center">
+                            <div class="avatar-ui me-3">{{user.firstName[0]}}{{user.lastName[0]}}</div>
+                            <div>
+                              <div class="fw-bold">{{user.firstName}} {{user.lastName}}</div>
+                              <small class="text-muted">{{user.email}}</small>
+                            </div>
+                          </div>
+                        </td>
+                        <td><span class="badge-role">{{user.roleName}}</span></td>
+                        <td>
+                          <span class="status-indicator" [class.active]="user.isActive === 1"></span>
+                          {{user.isActive === 1 ? 'Actif' : 'Inactif'}}
+                        </td>
+                        <td class="text-end pe-4">
+                          <button class="btn btn-icon-danger" (click)="confirmDelete(user)">
+                            <i class="feather icon-trash-2"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,30 +1,20 @@
 import { NgModule } from '@angular/core';
-import { Routes, RouterModule } from '@angular/router';
+import { RouterModule, Routes } from '@angular/router';
 
 // project import
 import { AdminComponent } from './theme/layout/admin/admin.component';
 import { GuestComponent } from './theme/layout/guest/guest.component';
-
-// Vérifie bien que le chemin ./pages/auth/signin/signin est correct (sans .ts)
 import { SignInComponent } from './pages/auth/signin/signin';
-import { SignUpComponent } from './pages/auth/signup/signup';
+import { UserManagement } from './pages/admin/user-management/user-management';
 
 const routes: Routes = [
+  // 1. Redirection de la racine vers /login
   {
     path: '',
-    component: AdminComponent,
-    children: [
-      {
-        path: '',
-        redirectTo: '/dashboard-v1',
-        pathMatch: 'full'
-      },
-      {
-        path: 'dashboard-v1',
-        loadComponent: () => import('./pages/dashboard-v1/dashboard-v1').then((c) => c.DashboardV1Component)
-      }
-    ]
+    redirectTo: 'login',
+    pathMatch: 'full'
   },
+  // 2. Pages "GUEST" (Login sans sidebar)
   {
     path: '',
     component: GuestComponent,
@@ -32,16 +22,29 @@ const routes: Routes = [
       {
         path: 'login',
         component: SignInComponent
-      },
-      {
-        path: 'register',
-        component: SignUpComponent
       }
     ]
   },
+  // 3. Pages "ADMIN" (Dashboard avec sidebar)
+  {
+    path: '',
+    component: AdminComponent,
+    children: [
+      {
+        path: 'dashboard-v1',
+        loadComponent: () => import('./pages/dashboard-v1/dashboard-v1').then((c) => c.DashboardV1Component)
+      },
+      {
+        path: 'user-management',
+        component: UserManagement
+      }
+
+    ]
+  },
+  // 4. Sécurité : Tout le reste va au login
   {
     path: '**',
-    redirectTo: '/dashboard-v1'
+    redirectTo: 'login'
   }
 ];
 
