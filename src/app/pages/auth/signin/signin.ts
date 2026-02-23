@@ -39,23 +39,24 @@ export class SignInComponent {
 
     const data = this.loginModal();
 
+    // Validation basique avant envoi
     if (data.username.trim() !== '' && data.password.trim() !== '') {
       this.isLoading.set(true);
 
       this.authService.login(data).subscribe({
         next: () => {
           this.isLoading.set(false);
-          // Redirection selon le rôle
-          if (this.authService.hasRole('ROLE_ADMIN')) {
-            this.router.navigate(['/dashboard-v1']);
-          } else {
-            this.router.navigate(['/user-dashboard']);
-          }
+
+          /**
+
+           * Plus besoin de vérifier les rôles, redirection directe vers le dashboard unique.
+           * Le AuthGuard s'occupera de protéger les routes spécifiques par la suite.
+           */
+          this.router.navigate(['/dashboard-v1']);
         },
-        error: (backendError) => { // Renommé 'err' en 'backendError' pour éviter les conflits
+        error: (backendError) => {
           this.isLoading.set(false);
 
-          // Utilisation explicite de la variable pour que TypeScript ne la souligne plus
           if (backendError.status === 401) {
             this.error.set('Identifiants incorrects.');
           } else {
