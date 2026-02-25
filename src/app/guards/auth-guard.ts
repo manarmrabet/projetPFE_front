@@ -45,26 +45,26 @@ export class AuthGuard implements CanActivate {
 
     // On vérifie si l'utilisateur possède l'un des rôles "User" (incluant Viewer et Warehouse)
     const isStandardUser =
-      this.authService.hasRole('ROLE_USER') ||
+      this.authService.hasRole('ROLE_RESPONSABLE_MAGASIN') ||
       this.authService.hasRole('ROLE_VIEWER') ||
-      this.authService.hasRole('ROLE_WAREHOUSE_WORKER');
+      this.authService.hasRole('ROLE_CONSULTATION') ||
+      this.authService.hasRole('ROLE_MAGASINIER');
 
-    if (isAdmin) {
-      // Si c'est un admin, sa maison est dashboard-v1
-      if (state.url !== '/dashboard-v1') {
-        this.router.navigate(['/dashboard-v1']);
-      }
-    } else if (isStandardUser) {
-      // Si c'est un Viewer, Worker ou User, sa maison est user-dashboard
-      if (state.url !== '/user-dashboard') {
-        this.router.navigate(['/user-dashboard']);
-      }
-    } else {
-      // Si l'utilisateur a un rôle totalement inconnu, on déconnecte par sécurité
-      console.warn("Rôle non reconnu. Déconnexion.");
-      this.authService.logout();
-    }
+    // Dans auth-guard.ts, remplace la partie finale par :
+const isAuthorizedUser = user.authorities.length > 0;
 
+if (isAdmin) {
+  if (state.url !== '/dashboard-v1') this.router.navigate(['/dashboard-v1']);
+} else if (isAuthorizedUser) {
+  // Si l'utilisateur a un rôle valide (comme ROLE_MANGER), on ne le déconnecte pas
+  // On le redirige simplement s'il essaie d'accéder à une zone interdite
+  if (state.url.includes('user-management')) {
+      this.router.navigate(['/dashboard-v1']);
+  }
+} else {
+  console.warn("Aucun rôle trouvé. Déconnexion.");
+  this.authService.logout();
+}
     return false;
   }
 }

@@ -1,50 +1,42 @@
-// angular import
-import { Component, OnInit, inject, output } from '@angular/core';
-import { Location, LocationStrategy } from '@angular/common';
+import { Component, OnInit, inject, output, signal } from '@angular/core';
+import { Location, LocationStrategy, CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 
 // project import
 import { environment } from 'src/environments/environment';
-import { NavigationItem, NavigationItems } from '../navigation';
+import { NavigationItem } from '../navigation';
 import { SharedModule } from 'src/app/theme/shared/shared.module';
 import { NavGroupComponent } from './nav-group/nav-group.component';
-import { AuthService } from 'src/app/services/auth';
+import { AdminService } from 'src/app/services/admin';
 
 @Component({
   selector: 'app-nav-content',
-  imports: [SharedModule, NavGroupComponent],
+  standalone: true,
+  imports: [SharedModule, NavGroupComponent, CommonModule, RouterModule],
   templateUrl: './nav-content.component.html',
   styleUrls: ['./nav-content.component.scss']
 })
 export class NavContentComponent implements OnInit {
   private location = inject(Location);
   private locationStrategy = inject(LocationStrategy);
-  private authService = inject(AuthService); // <--- Injection du AuthService
+  private adminService = inject(AdminService);
 
   // version
   title = 'Demo application for version numbering';
   currentApplicationVersion = environment.appVersion;
 
-  // public pops
-  navigation: NavigationItem[];
-  contentWidth: number;
-  wrapperWidth!: number;
-  scrollWidth: number;
+  // public props
+  navigation: NavigationItem[] = []; // Initialisé vide
   windowWidth: number;
-
   NavMobCollapse = output();
 
-  // constructor
   constructor() {
-    this.navigation = NavigationItems;
     this.windowWidth = window.innerWidth;
-    this.scrollWidth = 0;
-    this.contentWidth = 0;
   }
 
-  // life cycle event
- ngOnInit() {
-    // Appliquer le filtrage dès le chargement
-    this.filterNavigationByRole();
+  ngOnInit() {
+    // 1. Charger les menus dynamiquement depuis la base de données
+    this.loadDynamicNavigation();
 
     if (this.windowWidth < 992) {
       setTimeout(() => {
@@ -56,66 +48,49 @@ export class NavContentComponent implements OnInit {
       }, 500);
     }
   }
+
   /**
-   * Filtre les menus selon que l'utilisateur est ROLE_ADMIN ou non
+   * Appelle l'API MenuItemController pour obtenir les menus du rôle actuel
    */
-  filterNavigationByRole() {
-    const isAdmin = this.authService.hasRole('ROLE_ADMIN');
-
-    this.navigation = NavigationItems.map(group => {
-      // On clone le groupe pour ne pas impacter la config globale
-      const filteredGroup = { ...group };
-
-      if (filteredGroup.children) {
-        filteredGroup.children = filteredGroup.children.filter(item => {
-
-          // --- LOGIQUE DE RESTRICTION ---
-
-          // Masquer le dashboard administratif
-          if (item.id === 'dashboard-perso') {
-            return isAdmin;
-          }
-
-          // Masquer la gestion des utilisateurs
-          if (item.id === 'utilisateurs' || item.id === 'user-management') {
-            return isAdmin;
-          }
-
-          // On affiche le reste par défaut
-          return true;
-        });
-      }
-      return filteredGroup;
-    });
+  loadDynamicNavigation() {
+  const token = localStorage.getItem('token');
+  
+  // Si pas de token, on attend un peu (cas du login immédiat)
+  if (!token) {
+    setTimeout(() => this.loadDynamicNavigation(), 500);
+    return;
   }
 
-  fireLeave() {
-    const sections = document.querySelectorAll('.pcoded-hasmenu');
-    for (let i = 0; i < sections.length; i++) {
-      sections[i].classList.remove('active');
-      sections[i].classList.remove('pcoded-trigger');
-    }
-
-    let current_url = this.location.path();
-    const baseHref = this.locationStrategy.getBaseHref();
-    if (baseHref) {
-      current_url = baseHref + this.location.path();
-    }
-    const link = "a.nav-link[ href='" + current_url + "' ]";
-    const ele = document.querySelector(link);
-    if (ele !== null && ele !== undefined) {
-      const parent = ele.parentElement;
-      const up_parent = parent?.parentElement?.parentElement;
-      const last_parent = up_parent?.parentElement;
-      if (parent?.classList.contains('pcoded-hasmenu')) {
-        parent.classList.add('active');
-      } else if (up_parent?.classList.contains('pcoded-hasmenu')) {
-        up_parent.classList.add('active');
-      } else if (last_parent?.classList.contains('pcoded-hasmenu')) {
-        last_parent.classList.add('active');
+  this.adminService.getAuthorizedMenus().subscribe({
+    next: (menuDTOs) => {
+      if (!menuDTOs || menuDTOs.length === 0) {
+        console.warn("Aucun menu reçu du serveur.");
+        return;
       }
+      
+      const dynamicGroup: NavigationItem = {
+        id: 'navigation',
+        title: 'Mon Projet',
+        type: 'group',
+        icon: 'icon-navigation',
+        children: menuDTOs.map(m => ({
+          id: `menu-${m.menuItemId}`,
+          title: m.label,
+          type: 'item',
+          url: m.link,
+          icon: m.icon || 'feather icon-circle',
+          classes: 'nav-item'
+        }))
+      };
+      
+      this.navigation = [dynamicGroup];
+    },
+    error: (err) => {
+      console.error('Erreur lors du chargement du menu dynamique:', err);
+      // Optionnel : rediriger vers login si c'est une 403 persistante
     }
-  }
+  });
+}
 
   navMob() {
     if (this.windowWidth < 992 && document.querySelector('app-navigation.pcoded-navbar')?.classList.contains('mob-open')) {

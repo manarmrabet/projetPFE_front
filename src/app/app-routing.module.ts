@@ -31,9 +31,7 @@ const routes: Routes = [
       {
         path: 'user-management',
         component: UserManagement,
-        // On remet le guard ici pour qu'il lise les "data" (roles)
-        canActivate: [AuthGuard],
-        data: { roles: ['ROLE_ADMIN','ROLE_USER', 'ROLE_VIEWER', 'ROLE_WAREHOUSE_WORKER'] }
+        canActivate: [AuthGuard]
       },
 
     ]
