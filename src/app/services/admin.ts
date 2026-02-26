@@ -1,25 +1,32 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { Role, UserDTO, Site, ApiResponse, MenuItemDTO } from '../models/user.model'; 
+import { Role, UserDTO, Site, ApiResponse, MenuItemDTO } from '../models/user.model';
 import { HttpClient } from '@angular/common/http';
+
 
 @Injectable({
   providedIn: 'root',
 })
 export class AdminService {
   private http = inject(HttpClient);
+ private apiUrl = `http://localhost:8080/api`;
+
 
   private adminUrl = 'http://localhost:8080/api/admin/users';
-  private roleUrl = 'http://localhost:8080/api/admin/roles'; 
+  private roleUrl = 'http://localhost:8080/api/admin/roles';
   private siteUrl = 'http://localhost:8080/api/sites';
   private menuUrl = 'http://localhost:8080/api/menu-items/me'; // URL vers votre nouveau controller
 
   // Récupère les menus autorisés pour l'utilisateur connecté
-  getAuthorizedMenus(): Observable<MenuItemDTO[]> {
-    return this.http.get<ApiResponse<MenuItemDTO[]>>(this.menuUrl).pipe(
-      map(res => res.data || [])
-    );
-  }
+getAuthorizedMenus(): Observable<MenuItemDTO[]> {
+  return this.http.get<ApiResponse<MenuItemDTO[]>>(`${this.apiUrl}/menu-items/me`).pipe(
+    map(res => {
+      // On logue la réponse pour vérifier que le serveur renvoie bien quelque chose
+      console.log("Données reçues :", res.data);
+      return res.data || [];
+    })
+  );
+}
 
   getUsers(): Observable<UserDTO[]> {
     return this.http.get<ApiResponse<UserDTO[]>>(this.adminUrl).pipe(
@@ -55,5 +62,19 @@ export class AdminService {
     return this.http.get<ApiResponse<Site[]>>(this.siteUrl).pipe(
       map(res => res.data)
     );
+  }
+getAllMenuItems(): Observable<ApiResponse<MenuItemDTO[]>> {
+    return this.http.get<ApiResponse<MenuItemDTO[]>>(`${this.apiUrl}/menu-items`);
+  }
+
+  createMenuItem(menu: MenuItemDTO): Observable<ApiResponse<MenuItemDTO>> {
+    return this.http.post<ApiResponse<MenuItemDTO>>(`${this.apiUrl}/menu-items`, menu);
+  }
+
+  updateMenuItem(id: number, menu: MenuItemDTO): Observable<ApiResponse<MenuItemDTO>> {
+    return this.http.put<ApiResponse<MenuItemDTO>>(`${this.apiUrl}/menu-items/${id}`, menu);
+  }
+  deleteMenuItem(id: number): Observable<ApiResponse<void>> {
+    return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/menu-items/${id}`);
   }
 }

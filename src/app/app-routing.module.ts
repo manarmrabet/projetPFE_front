@@ -8,6 +8,8 @@ import { UserManagement } from './pages/admin/user-management/user-management';
 
 // ATTENTION : Vérifiez bien si votre fichier s'appelle auth.guard ou auth-guard
 import { AuthGuard } from './guards/auth-guard';
+import { RolePermissions } from './pages/role-permissions/role-permissions';
+import { MenuManagement } from './pages/menu-management/menu-management';
 
 
 const routes: Routes = [
@@ -33,6 +35,13 @@ const routes: Routes = [
         component: UserManagement,
         canActivate: [AuthGuard]
       },
+      {
+      path: 'role-permissions',
+      component: RolePermissions
+    },
+    {path: 'menu-management',
+    component: MenuManagement
+    },
 
     ]
   },
