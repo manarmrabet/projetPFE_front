@@ -11,6 +11,7 @@ import { UserDTO, Role, Site } from '../../../models/user.model';
   templateUrl: './user-management.html',
   styleUrl: './user-management.scss',
 })
+
 export class UserManagement implements OnInit {
   private adminService = inject(AdminService);
 
@@ -28,6 +29,7 @@ export class UserManagement implements OnInit {
 
   // Formulaire : initialisé avec une fonction helper
   newUser = signal<UserDTO>(this.initUser());
+
 
   // Recherche filtrée avec computed pour la performance
   filteredUsers = computed(() => {
@@ -104,30 +106,40 @@ export class UserManagement implements OnInit {
     this.newUser.set(this.initUser());
   }
 
-  // user-management.ts
-saveUser() {
+  saveUser() {
   const user = this.newUser();
-  const userId = user.id ?? (user as any).Id;
+  
+  // DEBUG : Vérifiez quel champ contient l'ID (id ou Id ou userId)
+  console.log('Utilisateur complet avant envoi:', user);
+  
+  // Utilisons une sécurité pour l'ID
+  const idToUse = user.id ?? (user as any).userId ?? (user as any).Id;
+
+  if (this.isEditMode() && !idToUse) {
+    console.error("Erreur : Impossible de modifier un utilisateur sans ID !");
+    alert("Erreur interne : ID manquant.");
+    return;
+  }
+
   this.isLoading.set(true);
 
+  // Correction : On utilise bien l'ID trouvé pour l'URL du PUT
   const obs = this.isEditMode()
-    ? this.adminService.updateUser(userId!, user)
+    ? this.adminService.updateUser(idToUse, user) 
     : this.adminService.createUser(user);
 
-  this.adminService.createUser(this.newUser()).subscribe({
-  next: () => {
-    this.refreshUsers();
-    this.closeModal();
-  },
-  error: (err) => {
-    // Si l'utilisateur est créé malgré la 403 (ce qui arrive dans votre cas)
-    if (err.status === 403) {
-      this.refreshUsers(); // On rafraîchit quand même
-      this.closeModal();   // On ferme la modale
+  obs.subscribe({
+    next: (res) => {
+      console.log('Réponse du serveur:', res);
+      this.refreshUsers();
+      this.closeModal();
+      this.isLoading.set(false);
+    },
+    error: (err) => {
+      console.error('Erreur lors de la mise à jour:', err);
+      this.isLoading.set(false);
     }
-    this.isLoading.set(false);
-  }
-});
+  });
 }
 
   confirmDelete(user: UserDTO) {

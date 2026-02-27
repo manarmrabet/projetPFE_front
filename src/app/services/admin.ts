@@ -29,11 +29,10 @@ export class AdminService {
   }
 
   updateUser(id: number, user: UserDTO): Observable<UserDTO> {
-    // Changé de /api/users/${id} à /api/admin/users/${id}
-    return this.http.put<ApiResponse<UserDTO>>(`${this.adminUsersUrl}/${id}`, user).pipe(
-      map(res => res.data)
-    );
-  }
+  return this.http.put<ApiResponse<UserDTO>>(`${this.adminUsersUrl}/${id}`, user).pipe(
+    map(res => res.data)
+  );
+}
 
   deleteUser(id: number): Observable<void> {
     return this.http.delete<ApiResponse<void>>(`${this.adminUsersUrl}/${id}`).pipe(
