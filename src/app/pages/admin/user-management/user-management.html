@@ -2,7 +2,7 @@
   <div class="d-flex align-items-center justify-content-between mb-4">
     <div>
       <h3 class="fw-bold text-dark mb-1">Gestion des Accès</h3>
-      <p class="text-muted">Visualisez votre équipe et gérez les permissions.</p>
+      <p class="text-muted small">Visualisez votre équipe, gérez les permissions et les sites.</p>
     </div>
     <button type="button" class="btn btn-primary btn-lg shadow-sm px-4" (click)="openModal()">
       <i class="feather icon-user-plus me-2"></i> Nouvel Utilisateur
@@ -15,7 +15,7 @@
         <span class="input-group-text bg-light border-0"><i class="feather icon-search"></i></span>
         <input type="text" class="form-control bg-light border-0" placeholder="Rechercher..." (input)="updateSearch($event)">
       </div>
-      <span class="badge bg-soft-primary text-primary px-3 py-2">{{filteredUsers().length}} Utilisateurs</span>
+      <span class="badge bg-soft-primary text-primary px-3 py-2">{{filteredUsers().length}} Collaborateurs</span>
     </div>
 
     <div class="table-responsive" style="min-height: 400px;">
@@ -23,6 +23,7 @@
         <thead class="bg-light">
           <tr>
             <th class="ps-4">Utilisateur</th>
+            <th>Site Affecté</th>
             <th>Rôle</th>
             <th>Statut</th>
             <th class="text-end pe-4">Actions</th>
@@ -32,10 +33,7 @@
           @if (isPageLoading()) {
             @for (i of [1,2,3,4,5]; track i) {
               <tr class="skeleton-row">
-                <td class="ps-4"><div class="skeleton avatar"></div> <div class="skeleton text w-50"></div></td>
-                <td><div class="skeleton text w-75"></div></td>
-                <td><div class="skeleton text w-25"></div></td>
-                <td><div class="skeleton btn ms-auto"></div></td>
+                <td colspan="5" class="p-3"><div class="skeleton text w-100"></div></td>
               </tr>
             }
           } @else {
@@ -43,17 +41,18 @@
               <tr class="animate-fade-in">
                 <td class="ps-4">
                   <div class="d-flex align-items-center">
-                    <div class="avatar-ui me-3">{{user.firstName[0]}}{{user.lastName[0]}}</div>
+                    <div class="avatar-ui me-3">{{user.firstName?.[0]}}{{user.lastName?.[0]}}</div>
                     <div>
                       <div class="fw-bold">{{user.firstName}} {{user.lastName}}</div>
                       <small class="text-muted">{{user.email}}</small>
                     </div>
                   </div>
                 </td>
+                <td><span class="text-dark fw-500">{{user.siteName || 'Non affecté'}}</span></td>
                 <td><span class="badge-role">{{user.roleName}}</span></td>
                 <td>
                   <span class="status-indicator" [class.active]="user.isActive === 1"></span>
-                  <span class="ms-1">{{user.isActive === 1 ? 'Actif' : 'Inactif'}}</span>
+                  <span class="ms-1 small">{{user.isActive === 1 ? 'Actif' : 'Inactif'}}</span>
                 </td>
                 <td class="text-end pe-4">
                   <button type="button" class="btn btn-icon-primary me-2" (click)="openModal(user)" title="Modifier">
@@ -66,10 +65,7 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="4" class="text-center py-5 text-muted">
-                  <i class="feather icon-users display-4 d-block mb-3"></i>
-                  Aucun utilisateur trouvé.
-                </td>
+                <td colspan="5" class="text-center py-5 text-muted">Aucun collaborateur trouvé.</td>
               </tr>
             }
           }
@@ -82,76 +78,88 @@
     <div class="custom-modal-backdrop animate-fade-in">
       <div class="custom-modal-content shadow-lg">
         <div class="modal-header-styled">
-          <h5 class="mb-0 fw-bold">{{ isEditMode() ? 'Modifier le collaborateur' : 'Ajouter un collaborateur' }}</h5>
+          <h5 class="mb-0 fw-bold">{{ isEditMode() ? 'Modifier le profil' : 'Création de compte' }}</h5>
           <button type="button" class="btn-close-modal" (click)="closeModal()">&times;</button>
         </div>
 
-        <div class="stepper-mini d-flex border-bottom">
-          <div class="step-mini" [class.active]="step() === 1">1. Identité</div>
-          <div class="step-mini" [class.active]="step() === 2">2. Rôle</div>
-        </div>
+        <div class="p-4 scrollable-form">
+          <div class="section-title text-primary">Informations de base</div>
+          
+          <div class="form-floating mb-3">
+            <input type="text" class="form-control" [(ngModel)]="newUser().userName" placeholder="User" [disabled]="isEditMode()">
+            <label>Nom d'utilisateur</label>
+          </div>
+          
+          <div class="form-floating mb-3">
+            <input type="email" class="form-control" [(ngModel)]="newUser().email" placeholder="Email">
+            <label>Email Professionnel</label>
+          </div>
 
-        <div class="p-4">
-          @if (step() === 1) {
-            <div class="form-floating mb-3">
-              <input type="text" class="form-control" [(ngModel)]="newUser().userName" placeholder="User" [disabled]="isEditMode()">
-              <label>Nom d'utilisateur</label>
-            </div>
-            <div class="form-floating mb-3">
-              <input type="email" class="form-control" [(ngModel)]="newUser().email" placeholder="Email">
-              <label>Email Pro</label>
-            </div>
-            <div class="row g-2 mb-4">
-              <div class="col-6">
-                <div class="form-floating">
-                  <input type="text" class="form-control" [(ngModel)]="newUser().firstName" placeholder="Prénom">
-                  <label>Prénom</label>
-                </div>
-              </div>
-              <div class="col-6">
-                <div class="form-floating">
-                  <input type="text" class="form-control" [(ngModel)]="newUser().lastName" placeholder="Nom">
-                  <label>Nom</label>
-                </div>
+          <div class="row g-2 mb-4">
+            <div class="col-6">
+              <div class="form-floating">
+                <input type="text" class="form-control" [(ngModel)]="newUser().firstName" placeholder="Prénom">
+                <label>Prénom</label>
               </div>
             </div>
-            <button type="button" class="btn btn-primary w-100 py-3 fw-bold" (click)="step.set(2)"
-                    [disabled]="!newUser().userName || !newUser().email">
-              Continuer
-            </button>
-          }
+            <div class="col-6">
+              <div class="form-floating">
+                <input type="text" class="form-control" [(ngModel)]="newUser().lastName" placeholder="Nom">
+                <label>Nom</label>
+              </div>
+            </div>
+          </div>
 
-          @if (step() === 2) {
-            <div class="role-selection-scroll mb-4">
-              @for (role of roles(); track role.roleId) {
-                <div class="role-card-mini"
-                     [class.selected]="newUser().roleName === role.roleName"
-                     (click)="newUser().roleName = role.roleName">
-                  <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                      <h6 class="mb-0 fw-bold">{{role.roleName}}</h6>
-                      <small class="text-muted">{{role.description}}</small>
-                    </div>
-                    @if (newUser().roleName === role.roleName) {
-                      <i class="feather icon-check-circle text-primary"></i>
-                    }
+          <div class="section-title text-primary">Localisation & Statut</div>
+          
+          <div class="form-group mb-3">
+  <label class="small fw-bold text-muted mb-1">Site d'affectation</label>
+  <select class="form-select form-select-lg" 
+          [(ngModel)]="newUser().siteName" 
+          name="siteName"> <option value="">Sélectionnez un site</option>
+    @for (site of sites(); track site.siteName) {
+      <option [value]="site.siteName">{{ site.siteName }}</option>
+    }
+  </select>
+</div>
+
+          <div class="form-check form-switch mb-4">
+            <input class="form-check-input" type="checkbox" id="userStatus" 
+                   [checked]="newUser().isActive === 1"
+                   (change)="newUser().isActive = ($any($event.target).checked ? 1 : 0)">
+            <label class="form-check-label fw-bold ms-2" for="userStatus" style="cursor: pointer;">
+              Compte {{ newUser().isActive === 1 ? 'Activé' : 'Désactivé' }}
+            </label>
+          </div>
+
+          <div class="section-title text-primary">Rôle applicatif</div>
+          <div class="role-selection-scroll mb-4">
+            @for (role of roles(); track role.roleId) {
+              <div class="role-card-mini"
+                   [class.selected]="newUser().roleName === role.roleName"
+                   (click)="newUser().roleName = role.roleName">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 class="mb-0 fw-bold">{{role.roleName}}</h6>
+                    <small class="text-muted">{{role.description}}</small>
                   </div>
+                  @if (newUser().roleName === role.roleName) {
+                    <i class="feather icon-check-circle text-primary"></i>
+                  }
                 </div>
-              }
-            </div>
-            <div class="d-flex gap-2">
-              <button type="button" class="btn btn-light py-3 px-4" (click)="step.set(1)">Retour</button>
-              <button type="button" class="btn btn-success flex-grow-1 py-3 fw-bold"
-                      (click)="saveUser()"
-                      [disabled]="!newUser().roleName || isLoading()">
-                @if (isLoading()) {
-                  <span class="spinner-border spinner-border-sm me-2"></span> Traitement...
-                } @else {
-                  {{ isEditMode() ? 'Enregistrer les modifications' : 'Finaliser l\'accès' }}
-                }
-              </button>
-            </div>
-          }
+              </div>
+            }
+          </div>
+
+          <button type="button" class="btn btn-success w-100 py-3 fw-bold shadow-sm"
+                  (click)="saveUser()"
+                  [disabled]="!newUser().userName || !newUser().roleName || isLoading()">
+            @if (isLoading()) {
+              <span class="spinner-border spinner-border-sm me-2"></span> Traitement...
+            } @else {
+              {{ isEditMode() ? 'Mettre à jour le profil' : 'Finaliser la création' }}
+            }
+          </button>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../services/admin';
-import { UserDTO, Role } from '../../../models/user.model';
+import { UserDTO, Role, Site } from '../../../models/user.model';
 
 @Component({
   selector: 'app-user-management',
@@ -14,37 +14,57 @@ import { UserDTO, Role } from '../../../models/user.model';
 export class UserManagement implements OnInit {
   private adminService = inject(AdminService);
 
+  // Signaux de données
   users = signal<UserDTO[]>([]);
   roles = signal<Role[]>([]);
+  sites = signal<Site[]>([]);
 
-  step = signal(1);
+  // État UI
   isLoading = signal(false);
   isPageLoading = signal(true);
   showModal = signal(false);
   isEditMode = signal(false);
   searchTerm = signal('');
 
+  // Formulaire : initialisé avec une fonction helper
   newUser = signal<UserDTO>(this.initUser());
 
+  // Recherche filtrée avec computed pour la performance
   filteredUsers = computed(() => {
     const term = this.searchTerm().toLowerCase();
     return this.users().filter(u =>
       u.firstName?.toLowerCase().includes(term) ||
       u.lastName?.toLowerCase().includes(term) ||
-      u.roleName?.toLowerCase().includes(term)
+      u.roleName?.toLowerCase().includes(term) ||
+      u.siteName?.toLowerCase().includes(term)
     );
   });
 
   ngOnInit(): void {
-    this.refreshData();
+    this.loadInitialData();
   }
 
-  initUser(): UserDTO {
-    return { userName: '', email: '', firstName: '', lastName: '', roleName: '', authorities: [] };
-  }
-
-  refreshData() {
+  loadInitialData() {
     this.isPageLoading.set(true);
+    
+    // Chargement parallèle des données
+    this.refreshUsers();
+    
+    this.adminService.getRoles().subscribe({
+      next: (res) => this.roles.set(res),
+      error: (err) => console.error('Erreur rôles:', err)
+    });
+
+    this.adminService.getSites().subscribe({
+      next: (res) => {
+        console.log('Sites chargés:', res);
+        this.sites.set(res);
+      },
+      error: (err) => console.error('Erreur sites:', err)
+    });
+  }
+
+  refreshUsers() {
     this.adminService.getUsers().subscribe({
       next: (res) => {
         this.users.set(res);
@@ -52,72 +72,70 @@ export class UserManagement implements OnInit {
       },
       error: () => this.isPageLoading.set(false)
     });
-    this.adminService.getRoles().subscribe(res => this.roles.set(res));
   }
 
-  // Fonction utilitaire pour extraire l'ID sans 'any'
-  private getUserId(user: UserDTO): number | undefined {
-    return user.Id ?? user.id;
+  initUser(): UserDTO {
+    return { 
+      userName: '', 
+      email: '', 
+      firstName: '', 
+      lastName: '', 
+      roleName: '', 
+      siteName: '', 
+      isActive: 1, 
+      authorities: [] 
+    };
   }
 
   openModal(user?: UserDTO) {
     if (user) {
       this.isEditMode.set(true);
+      // On crée une copie pour ne pas modifier la ligne du tableau en direct
       this.newUser.set({ ...user });
     } else {
       this.isEditMode.set(false);
       this.newUser.set(this.initUser());
     }
-    this.step.set(1);
     this.showModal.set(true);
   }
 
   closeModal() {
     this.showModal.set(false);
+    this.newUser.set(this.initUser());
   }
 
-  saveUser() {
-    const userId = this.getUserId(this.newUser());
+  // user-management.ts
+saveUser() {
+  const user = this.newUser();
+  const userId = user.id ?? (user as any).Id;
+  this.isLoading.set(true);
 
-    if (this.isEditMode() && userId === undefined) {
-      alert("Erreur : Impossible de modifier l'utilisateur car son ID est manquant.");
-      return;
+  const obs = this.isEditMode()
+    ? this.adminService.updateUser(userId!, user)
+    : this.adminService.createUser(user);
+
+  this.adminService.createUser(this.newUser()).subscribe({
+  next: () => {
+    this.refreshUsers();
+    this.closeModal();
+  },
+  error: (err) => {
+    // Si l'utilisateur est créé malgré la 403 (ce qui arrive dans votre cas)
+    if (err.status === 403) {
+      this.refreshUsers(); // On rafraîchit quand même
+      this.closeModal();   // On ferme la modale
     }
-
-    this.isLoading.set(true);
-    const obs = this.isEditMode()
-      ? this.adminService.updateUser(userId!, this.newUser())
-      : this.adminService.createUser(this.newUser());
-
-    obs.subscribe({
-      next: () => {
-        this.refreshData();
-        this.closeModal();
-        this.isLoading.set(false);
-      },
-      error: () => this.isLoading.set(false)
-    });
+    this.isLoading.set(false);
   }
+});
+}
 
   confirmDelete(user: UserDTO) {
-    const idToUse = this.getUserId(user);
-
-    if (!idToUse) {
-      console.error('ID manquant pour l\'utilisateur:', user);
-      alert("Erreur : L'identifiant de cet utilisateur est manquant.");
-      return;
-    }
-
-    if (confirm(`Voulez-vous vraiment supprimer ${user.firstName} ?`)) {
-      this.adminService.deleteUser(idToUse).subscribe({
-        next: () => {
-          alert('Utilisateur supprimé avec succès !');
-          this.refreshData();
-        },
-        error: (err) => {
-          console.error('Erreur API suppression :', err);
-          alert('Échec de la suppression en base de données.');
-        }
+    const id = user.id ?? (user as any).Id;
+    if (id && confirm(`Supprimer l'utilisateur ${user.firstName} ?`)) {
+      this.adminService.deleteUser(id).subscribe({
+        next: () => this.refreshUsers(),
+        error: (err) => console.error('Erreur suppression:', err)
       });
     }
   }

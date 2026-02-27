@@ -3,66 +3,63 @@ import { Observable, map } from 'rxjs';
 import { Role, UserDTO, Site, ApiResponse, MenuItemDTO } from '../models/user.model';
 import { HttpClient } from '@angular/common/http';
 
-
 @Injectable({
   providedIn: 'root',
 })
 export class AdminService {
   private http = inject(HttpClient);
- private apiUrl = `http://localhost:8080/api`;
+  private apiUrl = `http://localhost:8080/api`;
 
-
-  private adminUrl = 'http://localhost:8080/api/admin/users';
-  private roleUrl = 'http://localhost:8080/api/admin/roles';
-  private siteUrl = 'http://localhost:8080/api/sites';
-  private menuUrl = 'http://localhost:8080/api/menu-items/me'; // URL vers votre nouveau controller
-
-  // Récupère les menus autorisés pour l'utilisateur connecté
-getAuthorizedMenus(): Observable<MenuItemDTO[]> {
-  return this.http.get<ApiResponse<MenuItemDTO[]>>(`${this.apiUrl}/menu-items/me`).pipe(
-    map(res => {
-      // On logue la réponse pour vérifier que le serveur renvoie bien quelque chose
-      console.log("Données reçues :", res.data);
-      return res.data || [];
-    })
-  );
-}
+  // Chemins d'accès sécurisés correspondant au SecurityConfig
+  private adminUsersUrl = `${this.apiUrl}/admin/users`; 
+  private adminRolesUrl = `${this.apiUrl}/admin/roles`;
+  private adminSitesUrl = `${this.apiUrl}/admin/sites`;
 
   getUsers(): Observable<UserDTO[]> {
-    return this.http.get<ApiResponse<UserDTO[]>>(this.adminUrl).pipe(
+    return this.http.get<ApiResponse<UserDTO[]>>(this.adminUsersUrl).pipe(
       map(res => res.data)
     );
   }
 
   createUser(user: UserDTO): Observable<UserDTO> {
-    return this.http.post<ApiResponse<UserDTO>>(this.adminUrl, user).pipe(
+    // Changé de /api/users à /api/admin/users pour passer la sécurité
+    return this.http.post<ApiResponse<UserDTO>>(this.adminUsersUrl, user).pipe(
       map(res => res.data)
     );
   }
 
   updateUser(id: number, user: UserDTO): Observable<UserDTO> {
-    return this.http.put<ApiResponse<UserDTO>>(`${this.adminUrl}/${id}`, user).pipe(
+    // Changé de /api/users/${id} à /api/admin/users/${id}
+    return this.http.put<ApiResponse<UserDTO>>(`${this.adminUsersUrl}/${id}`, user).pipe(
       map(res => res.data)
     );
   }
 
   deleteUser(id: number): Observable<void> {
-    return this.http.delete<ApiResponse<void>>(`${this.adminUrl}/${id}`).pipe(
+    return this.http.delete<ApiResponse<void>>(`${this.adminUsersUrl}/${id}`).pipe(
       map(res => res.data)
     );
   }
 
   getRoles(): Observable<Role[]> {
-    return this.http.get<ApiResponse<Role[]>>(this.roleUrl).pipe(
+    return this.http.get<ApiResponse<Role[]>>(this.adminRolesUrl).pipe(
       map(res => res.data)
     );
   }
 
   getSites(): Observable<Site[]> {
-    return this.http.get<ApiResponse<Site[]>>(this.siteUrl).pipe(
+    return this.http.get<ApiResponse<Site[]>>(this.adminSitesUrl).pipe(
       map(res => res.data)
     );
   }
+
+  getAuthorizedMenus(): Observable<MenuItemDTO[]> {
+    return this.http.get<ApiResponse<MenuItemDTO[]>>(`${this.apiUrl}/menu-items/me`).pipe(
+      map(res => res.data || [])
+    );
+  }
+
+  
 getAllMenuItems(): Observable<ApiResponse<MenuItemDTO[]>> {
     return this.http.get<ApiResponse<MenuItemDTO[]>>(`${this.apiUrl}/menu-items`);
   }
